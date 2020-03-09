@@ -23,6 +23,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1076,6 +1077,16 @@ abstract public class Task implements Writable, Configurable {
     updateCounters();
     sendLastUpdate(umbilical);
     //signal the tasktracker that we are done
+    try {
+      Class<?> clazz = Class.forName("com.intel.daos.client.DaosFsClient");
+      Field field = clazz.getField("FINALIZER");
+      Runnable finalizer = (Runnable) field.get(null);
+      ShutdownHookManager.get().removeShutdownHook(finalizer);
+      finalizer.run();
+      System.out.println("finalizer done");
+    }catch (Exception e) {
+      e.printStackTrace();
+    }
     sendDone(umbilical);
     LOG.info("Final Counters for " + taskId + ": " +
               getCounters().toString());
